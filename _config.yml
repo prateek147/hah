@@ -1,5 +1,5 @@
 # SITE CONFIGURATION
-baseurl: "/hah"
+baseurl: ""
 url: "https://prateek147.github.io/"
 permalink: ":year/:month/:day/:title/"
 excerpt_separator: <!--more-->

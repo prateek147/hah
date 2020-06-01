@@ -12,53 +12,13 @@ In this article, we will look at attacking components in Android applications, s
 
 The description of the 4 components given below has been taken from <a href="http://www.tutorialspoint.com/android/android_application_components.htm">this</a> link.
 
-<table>
+1. Activities - They dictate the UI and handle the user interaction to the smartphone screen
 
-<tbody>
+2. Services - They handle background processing associated with an application.
 
-<tr>
+3. Broadcast Receivers - They handle communication between Android OS and applications.
 
-<th style="width:25%">Components</th>
-
-<th>Description</th>
-
-</tr>
-
-<tr>
-
-<td>Activities</td>
-
-<td>They dictate the UI and handle the user interaction to the smartphone screen</td>
-
-</tr>
-
-<tr>
-
-<td>Services</td>
-
-<td>They handle background processing associated with an application.</td>
-
-</tr>
-
-<tr>
-
-<td>Broadcast Receivers</td>
-
-<td>They handle communication between Android OS and applications.</td>
-
-</tr>
-
-<tr>
-
-<td>Content Providers</td>
-
-<td>They handle data and database management issues.</td>
-
-</tr>
-
-</tbody>
-
-</table>
+4. Content Providers - They handle data and database management issues.
 
 #### Activities
 
@@ -96,69 +56,17 @@ A content provider component supplies data from one application to others on req
 
 There are additional components which will be used in the construction of above mentioned entities, their logic, and wiring between them. These components are:
 
-<table class="src">
+1. Fragments - Represents a behavior or a portion of user interface in an Activity.
 
-<tbody>
+2. Views - UI elements that are drawn onscreen including buttons, lists forms etc.
 
-<tr>
+3. Layouts - View hierarchies that control screen format and appearance of the views.</td>
 
-<th style="width:25%">Components</th>
+4. Intents - Messages wiring components together.
 
-<th>Description</th>
+5. Resources - External elements, such as strings, constants and drawables pictures.
 
-</tr>
-
-<tr>
-
-<td>Fragments</td>
-
-<td>Represents a behavior or a portion of user interface in an Activity.</td>
-
-</tr>
-
-<tr>
-
-<td>Views</td>
-
-<td>UI elements that are drawn onscreen including buttons, lists forms etc.</td>
-
-</tr>
-
-<tr>
-
-<td>Layouts</td>
-
-<td>View hierarchies that control screen format and appearance of the views.</td>
-
-</tr>
-
-<tr>
-
-<td>Intents</td>
-
-<td>Messages wiring components together.</td>
-
-</tr>
-
-<tr>
-
-<td>Resources</td>
-
-<td>External elements, such as strings, constants and drawables pictures.</td>
-
-</tr>
-
-<tr>
-
-<td>Manifest</td>
-
-<td>Configuration file for the application.</td>
-
-</tr>
-
-</tbody>
-
-</table>
+6. Manifest - Configuration file for the application.
 
 #### One of the most important attributes of components is the exported property. Here is the documentation from android about it.
 
