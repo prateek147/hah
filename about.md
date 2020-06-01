@@ -2,11 +2,14 @@
 layout: page
 title: About
 permalink: /about/
-feature-img: "assets/img/sample_feature_img_2.png"
 ---
 
-Type Theme is a free and open-source theme for [Jekyll](http://jekyllrb.com/), licensed under the MIT License.
+### Who ami ?
 
-Head over to the [theme's documentation](https://rohanchandra.github.io/project/type/) for much more information about Type Theme or to install this theme on your own Jekyll site.
+I am Prateek Gianchandani. Currently i am working as a Security Researcher living in UAE. I have interests in Exploit Development, Application Security, Hardware Hacking, Reversing etc. iOS and Browser exploitation is one area that i really enjoy. I have spoken/trained at Conferences like Blackhat USA, Defcon, Brucon, PHDays, Owasp Appsec USA, Hack in Paris, x33fcon etc. I enjoy climbing mountains and have climbed 4 peaks ove 6000 metres. Going to the mountains is going home :). I am also a certified PADI Open water diver. I graduated from Indian Institute of Technology (IIT) Roorkee in 2011.
 
-This file is an example of a page in Jekyll, that automatically shows up in the header navigation, you can delete or modify this file freely.
+
+### Where can you contact me ?
+You can DM me on [Twitter](https://twitter.com/prateekg147) or send me an [Email](mailto:prateek@damnvulnerableiosapp.com)
+
+![](/images/nirekha.jpg)
