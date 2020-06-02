@@ -4,6 +4,17 @@ url: "https://prateek147.github.io/"
 permalink: ":year/:month/:day/:title/"
 excerpt_separator: <!--more-->
 
+#NAVIGATION SETTINGS
+
+navigation:
+- text: Home
+  url: /
+- text: Archives
+  url: /archives/
+- text: DVIA
+  url: http://damnvulnerableiosapp.com
+- text: About Me
+  url: /about/
 
 # THEME-SPECIFIC CONFIGURATION
 theme_settings:

