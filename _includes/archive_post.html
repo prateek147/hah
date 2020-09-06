@@ -1,8 +1,8 @@
 {% capture category %}{{ post.categories | size }}{% endcapture %}
 <div class="row-fluid">
 	<div class="span1">
-		<p class="date-time"><time datetime="{{ post.date | datetime | date_to_xmlschema }}" pubdate>{{ post.date | date: "<span class='month'>%b</span> <span class='day'>%d</span><span class='year'><!--%Y--></span>"}}</time></p>
-		<p><a href="{{ site.baseurl }}{{ post.url }}">{{post.title}}</a></p>
+		<strong class="date-time"><time datetime="{{ post.date | datetime | date_to_xmlschema }}" pubdate>{{ post.date | date: "<span class='month'>%b</span> <span class='day'>%d</span><span class='year'><!--%Y--></span>"}}</time></strong>
+		<strong><a href="{{ site.baseurl }}{{ post.url }}">{{post.title}}</a></strong>
 	</div>
 </div>
 {% if category != '0' %}
