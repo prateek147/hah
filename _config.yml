@@ -23,7 +23,7 @@ theme_settings:
   avatar: assets/img/avatar.png
   favicon: assets/favicon.ico
   gravatar: # Email MD5 hash
-  description: "A website with blog posts and pages" # used by search engines
+  description: "Security Blogs" # used by search engines
   excerpt_separator: <!--more-->
 
   # # Header and footer text
